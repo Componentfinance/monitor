@@ -1,12 +1,9 @@
-import { Transfer } from 'src/types/Transfer'
-
 const TelegramBot = require("node-telegram-bot-api");
 import Logger from 'src/logger'
-import { JoinExit } from 'src/types/JoinExit'
-import { tokenByAddress } from 'src/constants/tokens'
+import { DepositWithdrawal } from 'src/types/DepositWithdrawal'
+import { lpByAddress, tokenByAddress } from 'src/constants/tokens'
 import { numberWithCommas } from 'src/utils'
-import { LiquidationTrigger } from 'src/types/LiquidationTrigger'
-import { Liquidated } from 'src/types/Liquidated'
+import { Trade } from 'src/types/Trade'
 
 
 export default class NotificationService {
@@ -23,89 +20,57 @@ export default class NotificationService {
     this.processed = []
   }
 
-  async notifyJoin(data: JoinExit) {
-    if (!this._preNotify(this.notifyJoin.name + ' ' +  data.txHash)) return
-    const token = tokenByAddress(data.token) || { decimals: 18, symbol: data.token}
-    const mainFormatted = Number(data.main / BigInt(10 ** (token.decimals - 4))) / 10000
-    const colFormatted = data.col / BigInt(1e18)
-    let deposit =
-      (mainFormatted > 0 ? numberWithCommas(mainFormatted) + ' ' + token.symbol + ' ' : '')
-      + (colFormatted > 0 ? (mainFormatted > 0 ? 'and ': '') + numberWithCommas(colFormatted) + ' COL' : '')
+  async notifyDeposit(deposit: DepositWithdrawal) {
+    if (!this._preNotify(this.notifyDeposit.name + ' ' +  deposit.txHash)) return
+    const lp = lpByAddress(deposit.pool)
 
-    deposit = deposit === '' ? '' : 'Deposited ' + deposit
+    const depositText = Object.keys(deposit.tokens).map(tokenAddress => {
+      const token = tokenByAddress(tokenAddress)
+      return `\n${numberWithCommas(displayAssetAmount(deposit.tokens[tokenAddress], tokenAddress))} ${token && token.symbol || 'XYZ'}`
+    }).join('')
 
-    const usdp = Number(data.usdp / BigInt(10 ** 15)) / 1000
+    const lpAmount = displayAssetAmount(deposit.lp, deposit.pool)
+    const donutCount = lpAmount < 1000 ? 1 : (lpAmount < 5000 ? 2 : (Math.round(lpAmount / 5000) + 2))
 
-    const duckCount = usdp < 1000 ? 1 : (usdp < 5000 ? 2 : (Math.round(usdp / 5000) + 2))
-    let minted = data.usdp > 0 ? 'Minted ' + numberWithCommas(usdp) + ' USDP ' + '🦆'.repeat(duckCount) : ''
-    minted = minted ? (deposit ? '\n' + minted : minted) : ''
-
-    const text = deposit + minted + '\n' + `<a href="https://etherscan.io/tx/${data.txHash}">Etherscan</a>`
-    this.sendMessage(text)
-  }
-
-  async notifyExit(data: JoinExit) {
-    if (!this._preNotify(this.notifyExit.name + ' ' +  data.txHash)) return
-    const token = tokenByAddress(data.token) || { decimals: 18, symbol: data.token}
-    const mainFormatted = Number(data.main / BigInt(10 ** (token.decimals - 4))) / 10000
-    const colFormatted = data.col / BigInt(1e18)
-    let withdrawn =
-      (mainFormatted > 0 ? numberWithCommas(mainFormatted) + ' ' + token.symbol + ' ' : '')
-      + (colFormatted > 0 ? (mainFormatted > 0 ? 'and ': '') + numberWithCommas(colFormatted) + ' COL' : '')
-
-    withdrawn = withdrawn === '' ? '' : 'Withdrawn ' + withdrawn
-
-    const usdp = Number(data.usdp / BigInt(10 ** 15)) / 1000
-
-    let burned = data.usdp > 0 ? 'Burned ' + numberWithCommas(usdp) + ' USDP' : ''
-    burned = burned ? (withdrawn ? '\n' + burned : burned) : ''
-
-    const text = withdrawn + burned + '\n' + `<a href="https://etherscan.io/tx/${data.txHash}">Etherscan</a>`
-    this.sendMessage(text)
-  }
-
-  async notifyDuck(data: Transfer) {
-    const amountFormatted = Number(data.amount / BigInt(10 ** (18 - 4))) / 1e4
-    const text = `${amountFormatted} DUCK minted\n` + `<a href="https://etherscan.io/tx/${data.txHash}">Etherscan 🦆</a>`
-    this.sendMessage(text)
-  }
-
-  async notifyTriggered(data: LiquidationTrigger) {
-    if (!this._preNotify(this.notifyTriggered.name + ' ' +  data.txHash)) return
-    const token = tokenByAddress(data.token)
-
-    const text = 'Liquidation triggered'
-      + `\nYou can buyout ${token.symbol} collateral`
-      + `\nMain asset: ${data.token}`
-      + `\nOwner: ${data.user}`
-      + '\n' + `<a href="https://etherscan.io/tx/${data.txHash}">Etherscan</a>`
+    const text = 'Deposit'
+      + depositText
+      + `\n${numberWithCommas(lpAmount)} ${lp.symbol} minted ${'🍩'.repeat(donutCount)}`
+      + '\n' + `<a href="https://etherscan.io/tx/${deposit.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
   }
 
-  async notifyLiquidated(data: Liquidated) {
-    if (!this._preNotify(this.notifyLiquidated.name + ' ' +  data.txHash)) return
-    const token = tokenByAddress(data.token)
+  async notifyWithdraw(withdrawal: DepositWithdrawal) {
+    if (!this._preNotify(this.notifyWithdraw.name + ' ' +  withdrawal.txHash)) return
+    const lp = lpByAddress(withdrawal.pool)
 
-    const repaymentFormatted = Number(data.repayment / BigInt(10 ** (18 - 4))) / 1e4
+    const withdrawalText = Object.keys(withdrawal.tokens).map(tokenAddress => {
+      const token = tokenByAddress(tokenAddress)
+      return `\n${numberWithCommas(displayAssetAmount(withdrawal.tokens[tokenAddress], tokenAddress))} ${token && token.symbol || 'XYZ'}`
+    }).join('')
 
-    const text = 'Liquidated'
-      + `\n${token.symbol} collateral has been liquidated for ${repaymentFormatted} USDP`
-      + `\nMain asset: ${data.token}`
-      + `\nOwner: ${data.owner}`
-      + '\n' + `<a href="https://etherscan.io/tx/${data.txHash}">Etherscan</a>`
+    const lpAmount = displayAssetAmount(withdrawal.lp, withdrawal.pool)
+
+    const text = 'Withdrawal'
+      + withdrawalText
+      + `\n${numberWithCommas(lpAmount)} ${lp.symbol} burned`
+      + '\n' + `<a href="https://etherscan.io/tx/${withdrawal.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
   }
 
-  async notifyTriggerTx(data: LiquidationTrigger) {
-    if (!this._preNotify(this.notifyTriggerTx.name + ' ' +  data.txHash)) return
-    const token = tokenByAddress(data.token)
+  async notifyTrade(trade: Trade) {
+    if (!this._preNotify(this.notifyTrade.name + ' ' +  trade.txHash)) return
 
-    const text = `Trying to liquidate CDP with ${token.symbol} collateral`
-      + `\nMain asset: ${data.token}`
-      + `\nOwner: ${data.user}`
-      + '\n' + `<a href="https://etherscan.io/tx/${data.txHash}">Etherscan</a>`
+    const originAmount = displayAssetAmount(trade.originAmount, trade.origin)
+    const originSymbol = tokenByAddress(trade.origin).symbol
+
+    const targetAmount = displayAssetAmount(trade.targetAmount, trade.target)
+    const targetSymbol = tokenByAddress(trade.target).symbol
+
+    const text = 'Trade'
+      + `\n${numberWithCommas(originAmount)} ${originSymbol} -> ${numberWithCommas(targetAmount)} ${targetSymbol}`
+      + `\n<a href="https://etherscan.io/tx/${trade.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
   }
@@ -135,4 +100,9 @@ export default class NotificationService {
   private error(...args) {
     this.logger.error(args)
   }
+}
+
+function displayAssetAmount(atomic: bigint, address: string): number {
+  const decimals = tokenByAddress(address) && tokenByAddress(address).decimals || lpByAddress(address) && lpByAddress(address).decimals || 18
+  return  Number(atomic / BigInt(10 ** (decimals - 4))) / 1e4
 }

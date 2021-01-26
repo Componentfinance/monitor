@@ -1,76 +1,113 @@
 import { Log } from 'web3-core/types'
-import { JoinExit } from 'src/types/JoinExit'
-import { Transfer } from 'src/types/Transfer'
-import { LiquidationTrigger } from 'src/types/LiquidationTrigger'
-import { EXIT_TOPICS_WITH_COL, JOIN_TOPICS_WITH_COL } from 'src/constants'
-import { Liquidated } from 'src/types/Liquidated'
+import { DepositWithdrawal } from 'src/types/DepositWithdrawal'
+import { TRANSFER_TOPIC } from 'src/constants'
+import { Trade } from 'src/types/Trade'
+import Web3 from 'web3'
 
-export function parseJoinExit(event: Log): JoinExit {
-  const withCol = event.topics[0] === JOIN_TOPICS_WITH_COL[0] || event.topics[0] === EXIT_TOPICS_WITH_COL[0]
-  const token = topicToAddr(event.topics[1])
-  const user = topicToAddr(event.topics[2])
-  event.data = event.data.substr(2)
-  const main = hexToBN(event.data.substr(0, 64))
-  let col, usdp
-  if (withCol) {
-    col = hexToBN(event.data.substr(64, 64))
-    usdp = hexToBN(event.data.substr(128, 64))
-  } else {
-    col = BigInt(0)
-    usdp = hexToBN(event.data.substr(64, 64))
+export async function processDeposit(depositEvent: Log, web3Instance: Web3, poolTokens: string[]): Promise<DepositWithdrawal> {
+  const poolAddress = depositEvent.address.toLowerCase()
+  const user = topicToAddr(depositEvent.topics[2])
+  depositEvent.data = depositEvent.data.substr(2)
+  const lp = hexToBN(depositEvent.data.substr(0, 64))
+
+  const tokens = {}
+  const txHash = depositEvent.transactionHash
+
+  try {
+    const receipt = await web3Instance.eth.getTransactionReceipt(txHash)
+    receipt.logs.forEach(event => {
+      if (_isTokenDeposit(event, depositEvent.topics[2], poolAddress, poolTokens)) {
+        tokens[event.address.toLowerCase()] = hexToBN(event.data.substr(2))
+      }
+    })
+  } catch (e) {
+    console.error(e)
   }
-  const txHash = event.transactionHash
   return {
-    token,
+    pool: poolAddress,
     user,
-    main,
-    col,
-    usdp,
+    lp,
+    tokens,
     txHash,
   }
 }
 
-export function parseLiquidationTrigger(event: Log): LiquidationTrigger {
-  const token = topicToAddr(event.topics[1])
-  const user = topicToAddr(event.topics[2])
-  const txHash = event.transactionHash
+export async function processWithdraw(withdrawEvent: Log, web3Instance: Web3, poolTokens: string[]): Promise<DepositWithdrawal> {
+  const pool = withdrawEvent.address.toLowerCase()
+  const user = topicToAddr(withdrawEvent.topics[1])
+  withdrawEvent.data = withdrawEvent.data.substr(2)
+  const lp = hexToBN(withdrawEvent.data.substr(0, 64))
+
+  const tokens = {}
+  const txHash = withdrawEvent.transactionHash
+
+  try {
+    const receipt = await web3Instance.eth.getTransactionReceipt(txHash)
+    receipt.logs.forEach(event => {
+      if (_isTokenWithdraw(event, withdrawEvent.topics[1], pool, poolTokens)) {
+        tokens[event.address.toLowerCase()] = hexToBN(event.data.substr(2))
+      }
+    })
+  } catch (e) {
+    console.error(e)
+  }
   return {
-    token,
+    pool,
     user,
+    lp,
+    tokens,
     txHash,
   }
 }
 
-export function parseLiquidated(event: Log): Liquidated {
-  const token = topicToAddr(event.topics[1])
-  const user = topicToAddr(event.topics[2])
-  event.data = event.data.substr(2)
-  const repayment = hexToBN(event.data.substr(0, 64))
-  const penalty = hexToBN(event.data.substr(64, 64))
-  const txHash = event.transactionHash
+export function parseTrade(tradeEvent: Log): Trade {
+  const pool = tradeEvent.address.toLowerCase()
+  const trader = topicToAddr(tradeEvent.topics[1])
+  const origin = topicToAddr(tradeEvent.topics[2])
+  const target = topicToAddr(tradeEvent.topics[3])
+  tradeEvent.data = tradeEvent.data.substr(2)
+  const originAmount = hexToBN(tradeEvent.data.substr(0, 64))
+  const targetAmount = hexToBN(tradeEvent.data.substr(64, 64))
+  const txHash = tradeEvent.transactionHash
+
   return {
-    token,
-    owner: user,
-    penalty,
-    repayment,
+    pool,
+    trader,
+    origin,
+    target,
+    originAmount,
+    targetAmount,
     txHash,
   }
 }
 
-export function parseTransfer(event: Log): Transfer {
-  const to = topicToAddr(event.topics[2])
-  event.data = event.data.substr(2)
-  const amount = hexToBN(event.data.substr(0, 64))
-  const txHash = event.transactionHash
-  return {
-    to,
-    amount,
-    txHash,
+function _isTokenDeposit(event: Log, userTopic: string, pool: string, allowedTokens: string[]) {
+  if (!allowedTokens.includes(event.address.toLowerCase())) {
+    return false
   }
+  if (event.topics[0] !== TRANSFER_TOPIC) {
+    return false
+  }
+  if (event.topics[1] !== userTopic) {
+    return false
+  }
+  return event.topics[2] === addrToTopic(pool);
+
+}
+
+function _isTokenWithdraw(event: Log, userTopic: string, pool: string, restrictedTokens: string[]) {
+  if (!restrictedTokens.includes(event.address.toLowerCase())) return false
+  if (event.topics[0] !== TRANSFER_TOPIC) return false
+  if (event.topics[1] !== addrToTopic(pool)) return false
+  return event.topics[2] === userTopic;
 }
 
 export function topicToAddr(topic) {
   return '0x' + topic.substr(26)
+}
+
+export function addrToTopic(addr) {
+  return '0x' + '0'.repeat(24) + addr.substr(2)
 }
 
 export function hexToBN(str) {
