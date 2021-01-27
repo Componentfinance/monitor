@@ -2,7 +2,7 @@ const TelegramBot = require("node-telegram-bot-api");
 import Logger from 'src/logger'
 import { DepositWithdrawal } from 'src/types/DepositWithdrawal'
 import { lpByAddress, tokenByAddress } from 'src/constants/tokens'
-import { numberWithCommas } from 'src/utils'
+import { formatNumber } from 'src/utils'
 import { Trade } from 'src/types/Trade'
 
 
@@ -26,7 +26,7 @@ export default class NotificationService {
 
     const depositText = Object.keys(deposit.tokens).map(tokenAddress => {
       const token = tokenByAddress(tokenAddress)
-      return `\n${numberWithCommas(displayAssetAmount(deposit.tokens[tokenAddress], tokenAddress))} ${token && token.symbol || 'XYZ'}`
+      return `\n${formatNumber(displayAssetAmount(deposit.tokens[tokenAddress], tokenAddress))} ${token && token.symbol || 'XYZ'}`
     }).join('')
 
     const lpAmount = displayAssetAmount(deposit.lp, deposit.pool)
@@ -34,7 +34,7 @@ export default class NotificationService {
 
     const text = '#deposit'
       + depositText
-      + `\n${numberWithCommas(lpAmount)} ${lp.symbol} minted ${'🍩'.repeat(donutCount)}`
+      + `\n${formatNumber(lpAmount)} ${lp.symbol} minted ${'🍩'.repeat(donutCount)}`
       + '\n' + `<a href="https://etherscan.io/tx/${deposit.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
@@ -46,14 +46,14 @@ export default class NotificationService {
 
     const withdrawalText = Object.keys(withdrawal.tokens).map(tokenAddress => {
       const token = tokenByAddress(tokenAddress)
-      return `\n${numberWithCommas(displayAssetAmount(withdrawal.tokens[tokenAddress], tokenAddress))} ${token && token.symbol || 'XYZ'}`
+      return `\n${formatNumber(displayAssetAmount(withdrawal.tokens[tokenAddress], tokenAddress))} ${token && token.symbol || 'XYZ'}`
     }).join('')
 
     const lpAmount = displayAssetAmount(withdrawal.lp, withdrawal.pool)
 
     const text = '#withdrawal'
       + withdrawalText
-      + `\n${numberWithCommas(lpAmount)} ${lp.symbol} burned`
+      + `\n${formatNumber(lpAmount)} ${lp.symbol} burned`
       + '\n' + `<a href="https://etherscan.io/tx/${withdrawal.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
@@ -69,7 +69,7 @@ export default class NotificationService {
     const targetSymbol = tokenByAddress(trade.target).symbol
 
     const text = '#trade'
-      + `\n${numberWithCommas(originAmount)} ${originSymbol} -> ${numberWithCommas(targetAmount)} ${targetSymbol}`
+      + `\n${formatNumber(originAmount)} ${originSymbol} -> ${formatNumber(targetAmount)} ${targetSymbol}`
       + `\n<a href="https://etherscan.io/tx/${trade.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
