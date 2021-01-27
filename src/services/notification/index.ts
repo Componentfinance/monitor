@@ -32,7 +32,7 @@ export default class NotificationService {
     const lpAmount = displayAssetAmount(deposit.lp, deposit.pool)
     const donutCount = lpAmount < 1000 ? 1 : (lpAmount < 5000 ? 2 : (Math.round(lpAmount / 5000) + 2))
 
-    const text = 'Deposit'
+    const text = '#deposit'
       + depositText
       + `\n${numberWithCommas(lpAmount)} ${lp.symbol} minted ${'🍩'.repeat(donutCount)}`
       + '\n' + `<a href="https://etherscan.io/tx/${deposit.txHash}">Etherscan</a>`
@@ -51,7 +51,7 @@ export default class NotificationService {
 
     const lpAmount = displayAssetAmount(withdrawal.lp, withdrawal.pool)
 
-    const text = 'Withdrawal'
+    const text = '#withdrawal'
       + withdrawalText
       + `\n${numberWithCommas(lpAmount)} ${lp.symbol} burned`
       + '\n' + `<a href="https://etherscan.io/tx/${withdrawal.txHash}">Etherscan</a>`
@@ -68,7 +68,7 @@ export default class NotificationService {
     const targetAmount = displayAssetAmount(trade.targetAmount, trade.target)
     const targetSymbol = tokenByAddress(trade.target).symbol
 
-    const text = 'Trade'
+    const text = '#trade'
       + `\n${numberWithCommas(originAmount)} ${originSymbol} -> ${numberWithCommas(targetAmount)} ${targetSymbol}`
       + `\n<a href="https://etherscan.io/tx/${trade.txHash}">Etherscan</a>`
 
