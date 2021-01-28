@@ -10,7 +10,7 @@ import {
   WITHDRAW_EVENT,
 } from 'src/constants'
 import Logger from 'src/logger'
-import { processDeposit, parseTrade, processWithdraw } from 'src/utils'
+import { processDeposit, parseTrade, processWithdrawal } from 'src/utils'
 
 declare interface SynchronizationService {
   on(event: string, listener: Function): this;
@@ -43,7 +43,7 @@ class SynchronizationService extends EventEmitter {
         topics: BURN_TOPICS
       }, async (error, log ) =>{
         if (!error) {
-          this.emit(WITHDRAW_EVENT, await processWithdraw(log, this.web3, tokens))
+          this.emit(WITHDRAW_EVENT, await processWithdrawal(log, this.web3, tokens))
         }
       })
       this.web3.eth.subscribe('logs', {

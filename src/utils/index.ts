@@ -32,8 +32,8 @@ export async function processDeposit(depositEvent: Log, web3Instance: Web3, pool
   }
 }
 
-export async function processWithdraw(withdrawEvent: Log, web3Instance: Web3, poolTokens: string[]): Promise<DepositWithdrawal> {
-  const pool = withdrawEvent.address.toLowerCase()
+export async function processWithdrawal(withdrawEvent: Log, web3Instance: Web3, poolTokens: string[]): Promise<DepositWithdrawal> {
+  const poolAddress = withdrawEvent.address.toLowerCase()
   const user = topicToAddr(withdrawEvent.topics[1])
   withdrawEvent.data = withdrawEvent.data.substr(2)
   const lp = hexToBN(withdrawEvent.data.substr(0, 64))
@@ -44,7 +44,7 @@ export async function processWithdraw(withdrawEvent: Log, web3Instance: Web3, po
   try {
     const receipt = await web3Instance.eth.getTransactionReceipt(txHash)
     receipt.logs.forEach(event => {
-      if (_isTokenWithdraw(event, withdrawEvent.topics[1], pool, poolTokens)) {
+      if (_isTokenWithdraw(event, withdrawEvent.topics[1], poolAddress, poolTokens)) {
         tokens[event.address.toLowerCase()] = hexToBN(event.data.substr(2))
       }
     })
@@ -52,7 +52,7 @@ export async function processWithdraw(withdrawEvent: Log, web3Instance: Web3, po
     console.error(e)
   }
   return {
-    pool,
+    pool: poolAddress,
     user,
     lp,
     tokens,
@@ -95,11 +95,18 @@ function _isTokenDeposit(event: Log, userTopic: string, pool: string, allowedTok
 
 }
 
-function _isTokenWithdraw(event: Log, userTopic: string, pool: string, restrictedTokens: string[]) {
-  if (!restrictedTokens.includes(event.address.toLowerCase())) return false
-  if (event.topics[0] !== TRANSFER_TOPIC) return false
-  if (event.topics[1] !== addrToTopic(pool)) return false
+function _isTokenWithdraw(event: Log, userTopic: string, poolAddress: string, allowedTokens: string[]) {
+  if (!allowedTokens.includes(event.address.toLowerCase())) {
+    return false
+  }
+  if (event.topics[0] !== TRANSFER_TOPIC) {
+    return false
+  }
+  if (event.topics[1] !== addrToTopic(poolAddress)) {
+    return false
+  }
   return event.topics[2] === userTopic;
+
 }
 
 export function topicToAddr(topic) {
