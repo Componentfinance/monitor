@@ -1,3 +1,5 @@
+import { POOLS } from 'src/constants'
+
 const TelegramBot = require("node-telegram-bot-api");
 import Logger from 'src/logger'
 import { DepositWithdrawal } from 'src/types/DepositWithdrawal'
@@ -32,7 +34,7 @@ export default class NotificationService {
     const lpAmount = displayAssetAmount(deposit.lp, deposit.pool)
     const donutCount = lpAmount < 1000 ? 1 : (lpAmount < 5000 ? 2 : (Math.round(lpAmount / 5000) + 2))
 
-    const text = '#deposit'
+    const text = (deposit.pool === POOLS[1].address ? '#deposit_synth' : '#deposit')
       + depositText
       + `\n${formatNumber(lpAmount)} ${lp.symbol} minted ${'🍩'.repeat(donutCount)}`
       + '\n' + `<a href="https://etherscan.io/tx/${deposit.txHash}">Etherscan</a>`
@@ -51,7 +53,7 @@ export default class NotificationService {
 
     const lpAmount = displayAssetAmount(withdrawal.lp, withdrawal.pool)
 
-    const text = '#withdrawal'
+    const text = (withdrawal.pool === POOLS[1].address ? '#withdrawal_synth' : '#withdrawal')
       + withdrawalText
       + `\n${formatNumber(lpAmount)} ${lp.symbol} burned`
       + '\n' + `<a href="https://etherscan.io/tx/${withdrawal.txHash}">Etherscan</a>`
@@ -68,7 +70,7 @@ export default class NotificationService {
     const targetAmount = displayAssetAmount(trade.targetAmount, trade.target)
     const targetSymbol = tokenByAddress(trade.target).symbol
 
-    const text = '#trade'
+    const text = (trade.pool === POOLS[1].address ? '#trade_synth' : '#trade')
       + `\n${formatNumber(originAmount)} ${originSymbol} -> ${formatNumber(targetAmount)} ${targetSymbol}`
       + `\n<a href="https://etherscan.io/tx/${trade.txHash}">Etherscan</a>`
 

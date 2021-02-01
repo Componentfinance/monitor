@@ -11,10 +11,22 @@ const tokens = {
     symbol: 'USDT',
     decimals: 6,
   },
+  '0x6b175474e89094c44da98b954eedeac495271d0f': {
+    symbol: 'DAI',
+    decimals: 18,
+  },
+  '0x57ab1ec28d129707052df4df418d58a2d46d5f51': {
+    symbol: 'sUSD',
+    decimals: 18,
+  },
 }
 
 const lps = {
   '0x49519631b404e06ca79c9c7b0dc91648d86f08db': {
+    symbol: 'CMP-LP',
+    decimals: 18,
+  },
+  '0x6477960dd932d29518d7e8087d5ea3d11e606068': {
     symbol: 'CMP-LP',
     decimals: 18,
   },
