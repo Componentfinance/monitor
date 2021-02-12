@@ -35,7 +35,7 @@ export default class NotificationService {
     const text = '#deposit_xdai'
       + depositText
       + `\n${formatNumber(lpAmount)} ${lp.symbol} minted ${'🍩'.repeat(donutCount)}`
-      + '\n' + `<a href="https://etherscan.io/tx/${deposit.txHash}">Etherscan</a>`
+      + '\n' + `<a href="https://blockscout.com/poa/xdai/tx/${deposit.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
   }
@@ -54,7 +54,7 @@ export default class NotificationService {
     const text = '#withdrawal_xdai'
       + withdrawalText
       + `\n${formatNumber(lpAmount)} ${lp.symbol} burned`
-      + '\n' + `<a href="https://etherscan.io/tx/${withdrawal.txHash}">Etherscan</a>`
+      + '\n' + `<a href="https://blockscout.com/poa/xdai/tx/${withdrawal.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
   }
@@ -70,7 +70,7 @@ export default class NotificationService {
 
     const text = '#trade_xdai'
       + `\n${formatNumber(originAmount)} ${originSymbol} -> ${formatNumber(targetAmount)} ${targetSymbol}`
-      + `\n<a href="https://etherscan.io/tx/${trade.txHash}">Etherscan</a>`
+      + `\n<a href="https://blockscout.com/poa/xdai/tx/${trade.txHash}">Etherscan</a>`
 
     this.sendMessage(text)
   }
