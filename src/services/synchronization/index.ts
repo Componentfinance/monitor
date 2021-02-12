@@ -1,13 +1,11 @@
 import { EventEmitter } from 'events';
 import Web3 from 'web3'
 import {
-  BURN_TOPICS,
   DEPOSIT_EVENT,
-  MINT_TOPICS,
   POOLS,
   TRADE_EVENT,
-  TRADE_TOPICS,
   WITHDRAW_EVENT,
+  BLOCKTIME, TRANSFER_TOPIC, ZERO_TOPIC, TRADE_TOPIC,
 } from 'src/constants'
 import Logger from 'src/logger'
 import { processDeposit, parseTrade, processWithdrawal } from 'src/utils'
@@ -20,6 +18,7 @@ declare interface SynchronizationService {
 class SynchronizationService extends EventEmitter {
   private readonly web3: Web3
   private readonly logger
+  private lasProcessedBlock: number
 
   constructor(web3) {
     super();
@@ -28,33 +27,90 @@ class SynchronizationService extends EventEmitter {
     this.trackEvents()
   }
 
-  private trackEvents() {
-    POOLS.forEach(({ address, tokens}) => {
-      this.web3.eth.subscribe('logs', {
+  private async trackEvents() {
+    this.lasProcessedBlock = await this.web3.eth.getBlockNumber()
+
+    while (true) {
+      const nextBlock = await this.waitForTheNextBlock()
+      await this.loadEvents(nextBlock)
+    }
+
+  }
+
+  private async loadEvents(toBlock) {
+
+    for (const { address, tokens } of POOLS) {
+
+      const logs = await this.web3.eth.getPastLogs({
         address,
-        topics: MINT_TOPICS
-      }, async (error, log ) =>{
-        if (!error) {
+        fromBlock: this.lasProcessedBlock,
+        toBlock: toBlock,
+      })
+
+      for (const log of logs) {
+
+        if (SynchronizationService.isMint(log.topics)) {
           this.emit(DEPOSIT_EVENT, await processDeposit(log, this.web3, tokens))
-        }
-      })
-      this.web3.eth.subscribe('logs', {
-        address,
-        topics: BURN_TOPICS
-      }, async (error, log ) =>{
-        if (!error) {
+        } else if (SynchronizationService.isBurn(log.topics)) {
           this.emit(WITHDRAW_EVENT, await processWithdrawal(log, this.web3, tokens))
-        }
-      })
-      this.web3.eth.subscribe('logs', {
-        address,
-        topics: TRADE_TOPICS
-      }, async (error, log ) =>{
-        if (!error) {
+        } else if (SynchronizationService.isTrade(log.topics)) {
           this.emit(TRADE_EVENT, parseTrade(log))
+        } else {
+          console.error(`${log.transactionHash} unexpected topics ${log.topics}`)
         }
-      })
-    });
+
+      }
+
+    }
+
+    this.lasProcessedBlock = toBlock
+
+  }
+
+  private async waitForTheNextBlock(): Promise<number> {
+    await (new Promise(resolve => setTimeout(resolve, BLOCKTIME)))
+    const block = await this.web3.eth.getBlockNumber()
+    if (block > this.lasProcessedBlock) {
+      return block
+    } else {
+      return this.waitForTheNextBlock()
+    }
+  }
+
+  private static isMint(topics: string[]) {
+    if (topics.length !== 3) {
+      return false
+    }
+    if (topics[0] !== TRANSFER_TOPIC) {
+      return false
+    }
+    if (topics[0] !== ZERO_TOPIC) {
+      return false
+    }
+    return true
+  }
+
+  private static isBurn(topics: string[]) {
+    if (topics.length !== 3) {
+      return false
+    }
+    if (topics[0] !== TRANSFER_TOPIC) {
+      return false
+    }
+    if (topics[2] !== ZERO_TOPIC) {
+      return false
+    }
+    return true
+  }
+
+  private static isTrade(topics: string[]) {
+    if (topics.length !== 4) {
+      return false
+    }
+    if (topics[0] !== TRADE_TOPIC) {
+      return false
+    }
+    return true
   }
 }
 
