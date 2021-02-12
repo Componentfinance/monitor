@@ -84,7 +84,7 @@ class SynchronizationService extends EventEmitter {
     if (topics[0] !== TRANSFER_TOPIC) {
       return false
     }
-    if (topics[0] !== ZERO_TOPIC) {
+    if (topics[1] !== ZERO_TOPIC) {
       return false
     }
     return true
