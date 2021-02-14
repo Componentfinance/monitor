@@ -1,12 +1,10 @@
 import web3 from 'src/provider'
 
 export const ZERO_TOPIC = '0x' + '0'.repeat(64)
-
-export const MINT_TOPICS = [web3.utils.sha3('Transfer(address,address,uint256)'), ZERO_TOPIC]
-export const BURN_TOPICS = [web3.utils.sha3('Transfer(address,address,uint256)'), [], ZERO_TOPIC]
-export const TRADE_TOPICS = [web3.utils.sha3('Trade(address,address,address,uint256,uint256)')]
-
 export const TRANSFER_TOPIC = web3.utils.sha3('Transfer(address,address,uint256)')
+export const TRADE_TOPIC = web3.utils.sha3('Trade(address,address,address,uint256,uint256)')
+export const BLOCKTIME = 12000;
+
 
 export const POOLS: {
   address: string
@@ -33,3 +31,4 @@ export const POOLS: {
 export const DEPOSIT_EVENT = 'deposit'
 export const WITHDRAW_EVENT = 'withdraw'
 export const TRADE_EVENT = 'trade'
+export const APP_STATE_FILENAME = 'app.dat'

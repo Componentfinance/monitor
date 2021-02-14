@@ -35,3 +35,5 @@ plugin.sketchplugin
 
 test.ts
 *.js
+
+app.dat
