@@ -84,10 +84,8 @@ class SynchronizationService extends EventEmitter {
     if (topics[0] !== TRANSFER_TOPIC) {
       return false
     }
-    if (topics[1] !== ZERO_TOPIC) {
-      return false
-    }
-    return true
+    return topics[1] === ZERO_TOPIC;
+
   }
 
   private static isBurn(topics: string[]) {
@@ -97,20 +95,16 @@ class SynchronizationService extends EventEmitter {
     if (topics[0] !== TRANSFER_TOPIC) {
       return false
     }
-    if (topics[2] !== ZERO_TOPIC) {
-      return false
-    }
-    return true
+    return topics[2] === ZERO_TOPIC;
+
   }
 
   private static isTrade(topics: string[]) {
     if (topics.length !== 4) {
       return false
     }
-    if (topics[0] !== TRADE_TOPIC) {
-      return false
-    }
-    return true
+    return topics[0] === TRADE_TOPIC;
+
   }
 }
 
