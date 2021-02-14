@@ -1,11 +1,16 @@
 import { EventEmitter } from 'events';
 import Web3 from 'web3'
+import fs from 'fs'
 import {
   DEPOSIT_EVENT,
   POOLS,
   TRADE_EVENT,
   WITHDRAW_EVENT,
-  BLOCKTIME, TRANSFER_TOPIC, ZERO_TOPIC, TRADE_TOPIC,
+  BLOCKTIME,
+  TRANSFER_TOPIC,
+  ZERO_TOPIC,
+  TRADE_TOPIC,
+  APP_STATE_FILENAME,
 } from 'src/constants'
 import Logger from 'src/logger'
 import { processDeposit, parseTrade, processWithdrawal } from 'src/utils'
@@ -28,11 +33,32 @@ class SynchronizationService extends EventEmitter {
   }
 
   private async trackEvents() {
+
+    try {
+      const lastBlockData = fs.readFileSync(APP_STATE_FILENAME, 'utf8');
+      this.lastProcessedBlock = +JSON.parse(lastBlockData).lastProcessedBlock
+      this.log(`Loaded last synced block: ${this.lastProcessedBlock}`)
+
+    } catch (e) {
+
+      console.log(e)
+      try {
     this.lastProcessedBlock = await this.web3.eth.getBlockNumber()
+        this.log(`RPC now at ${this.lastProcessedBlock} block`)
+      } catch (e) {
+        this.logError('web3 RPC is unreachable', e)
+        process.exit()
+      }
+
+    }
 
     while (true) {
+      try {
       const nextBlock = await this.waitForTheNextBlock()
       await this.loadEvents(nextBlock)
+      } catch (e) {
+        this.logError(e)
+      }
     }
 
   }
@@ -56,15 +82,26 @@ class SynchronizationService extends EventEmitter {
         } else if (SynchronizationService.isTrade(log.topics)) {
           this.emit(TRADE_EVENT, parseTrade(log))
         } else {
-          console.error(`${log.transactionHash} unexpected topics ${log.topics}`)
+          this.logError(`${log.transactionHash} unexpected topics ${log.topics}`)
         }
 
       }
 
+
     }
 
-    this.lastProcessedBlock = toBlock
+    this.setProcessedBlock(toBlock)
 
+  }
+
+  private setProcessedBlock(block) {
+    this.lastProcessedBlock = block
+    try {
+      fs.writeFileSync(APP_STATE_FILENAME, JSON.stringify(this.getAppState()))
+    } catch (e) {
+      this.logError(e)
+    }
+    this.log(`Synchronized to block ${this.lastProcessedBlock}`)
   }
 
   private async waitForTheNextBlock(): Promise<number> {
@@ -105,6 +142,18 @@ class SynchronizationService extends EventEmitter {
     }
     return topics[0] === TRADE_TOPIC;
 
+  }
+
+  private getAppState() {
+    return { lastProcessedBlock: this.lastProcessedBlock }
+  }
+
+  private log(...args) {
+    this.logger.info(args)
+  }
+
+  private logError(...args) {
+    this.logger.error(args)
   }
 }
 
