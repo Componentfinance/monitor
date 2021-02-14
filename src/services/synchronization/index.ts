@@ -18,7 +18,7 @@ declare interface SynchronizationService {
 class SynchronizationService extends EventEmitter {
   private readonly web3: Web3
   private readonly logger
-  private lasProcessedBlock: number
+  private lastProcessedBlock: number
 
   constructor(web3) {
     super();
@@ -28,7 +28,7 @@ class SynchronizationService extends EventEmitter {
   }
 
   private async trackEvents() {
-    this.lasProcessedBlock = await this.web3.eth.getBlockNumber()
+    this.lastProcessedBlock = await this.web3.eth.getBlockNumber()
 
     while (true) {
       const nextBlock = await this.waitForTheNextBlock()
@@ -43,7 +43,7 @@ class SynchronizationService extends EventEmitter {
 
       const logs = await this.web3.eth.getPastLogs({
         address,
-        fromBlock: this.lasProcessedBlock,
+        fromBlock: this.lastProcessedBlock,
         toBlock: toBlock,
       })
 
@@ -63,14 +63,14 @@ class SynchronizationService extends EventEmitter {
 
     }
 
-    this.lasProcessedBlock = toBlock
+    this.lastProcessedBlock = toBlock
 
   }
 
   private async waitForTheNextBlock(): Promise<number> {
     await (new Promise(resolve => setTimeout(resolve, BLOCKTIME)))
     const block = await this.web3.eth.getBlockNumber()
-    if (block > this.lasProcessedBlock) {
+    if (block > this.lastProcessedBlock) {
       return block
     } else {
       return this.waitForTheNextBlock()
