@@ -6,7 +6,7 @@ import {
   POOLS,
   TRADE_EVENT,
   WITHDRAW_EVENT,
-  BLOCKTIME,
+  CHECKING_INTERVAL,
   TRANSFER_TOPIC,
   ZERO_TOPIC,
   TRADE_TOPIC,
@@ -105,7 +105,7 @@ class SynchronizationService extends EventEmitter {
   }
 
   private async waitForTheNextBlock(): Promise<number> {
-    await (new Promise(resolve => setTimeout(resolve, BLOCKTIME)))
+    await (new Promise(resolve => setTimeout(resolve, CHECKING_INTERVAL)))
     const block = await this.web3.eth.getBlockNumber()
     if (block > this.lastProcessedBlock) {
       return block

@@ -22,6 +22,6 @@ export const POOLS: {
 
 export const DEPOSIT_EVENT = 'deposit'
 export const WITHDRAW_EVENT = 'withdraw'
-export const BLOCKTIME = 5000
+export const CHECKING_INTERVAL = 60_000
 export const TRADE_EVENT = 'trade'
 export const APP_STATE_FILENAME = 'app.dat'
