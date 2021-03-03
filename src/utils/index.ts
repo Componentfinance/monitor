@@ -122,10 +122,10 @@ export function hexToBN(str) {
 }
 
 export function formatNumber(x) {
-  if (x > 1_000_000) {
+  if (x >= 1_000_000) {
     return `${Math.floor(x / 10_000) / 100}M`
   }
-  if (x > 1_000) {
+  if (x >= 1_000) {
     return `${Math.floor(x / 10) / 100}K`
   }
   let y = x.toString()

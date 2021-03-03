@@ -30,7 +30,9 @@ export default class NotificationService {
     }).join('')
 
     const lpAmount = displayAssetAmount(deposit.lp, deposit.pool)
-    const donutCount = lpAmount < 1000 ? 1 : (lpAmount < 5000 ? 2 : (Math.round(lpAmount / 5000) + 2))
+    const donutCount = lpAmount < 1_000 ? 1 : (lpAmount < 5_000 ? 2 : (Math.round(lpAmount / 5_000) + 2))
+
+    if (lpAmount < 1_000) return
 
     const text = '#deposit_xdai'
       + depositText
@@ -51,6 +53,8 @@ export default class NotificationService {
 
     const lpAmount = displayAssetAmount(withdrawal.lp, withdrawal.pool)
 
+    if (lpAmount < 1_000) return
+
     const text = '#withdrawal_xdai'
       + withdrawalText
       + `\n${formatNumber(lpAmount)} ${lp.symbol} burned`
@@ -67,6 +71,8 @@ export default class NotificationService {
 
     const targetAmount = displayAssetAmount(trade.targetAmount, trade.target)
     const targetSymbol = tokenByAddress(trade.target).symbol
+
+    if (targetAmount < 1_000) return
 
     const text = '#trade_xdai'
       + `\n${formatNumber(originAmount)} ${originSymbol} -> ${formatNumber(targetAmount)} ${targetSymbol}`
