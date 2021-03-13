@@ -11,11 +11,11 @@ export const POOLS: {
   tokens: string[]
 }[] = [
   {
-    address: '0x53de001bbfae8cecbbd6245817512f8dbd8eef18',
+    address: '0xcf76a0cedf50da184fdef08a9d04e6829d7fefdf',
     tokens: [
-      '0xddafbb505ad214d7b80b1f830fccc89b60fb7a83',
-      '0xfe7ed09c4956f7cdb54ec4ffcb9818db2d7025b8',
-      '0xe91d153e0b41518a2ce8dd3d7944fa863463a97d',
+      '0xdacd011a71f8c9619642bf482f1d4ceb338cffcf',
+      '0xe9e7cea3dedca5984780bafc599bd69add087d56',
+      '0x55d398326f99059ff775485246999027b3197955',
     ],
   },
 ]

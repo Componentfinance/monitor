@@ -41,7 +41,6 @@ class SynchronizationService extends EventEmitter {
 
     } catch (e) {
 
-      console.log(e)
       try {
         this.lastProcessedBlock = await this.web3.eth.getBlockNumber()
         this.log(`RPC now at ${this.lastProcessedBlock} block`)

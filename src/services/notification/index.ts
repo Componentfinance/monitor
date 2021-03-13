@@ -34,10 +34,10 @@ export default class NotificationService {
 
     if (lpAmount < 1_000) return
 
-    const text = '#deposit_xdai'
+    const text = '#bsc_deposit'
       + depositText
       + `\n${formatNumber(lpAmount)} ${lp.symbol} minted ${'🍩'.repeat(donutCount)}`
-      + '\n' + `<a href="https://blockscout.com/poa/xdai/tx/${deposit.txHash}">Blockscout</a>`
+      + '\n' + `<a href="https://bscscan.com/tx/${deposit.txHash}">Explorer</a>`
 
     this.sendMessage(text)
   }
@@ -55,10 +55,10 @@ export default class NotificationService {
 
     if (lpAmount < 1_000) return
 
-    const text = '#withdrawal_xdai'
+    const text = '#bsc_withdrawal'
       + withdrawalText
       + `\n${formatNumber(lpAmount)} ${lp.symbol} burned`
-      + '\n' + `<a href="https://blockscout.com/poa/xdai/tx/${withdrawal.txHash}">Blockscout</a>`
+      + '\n' + `<a href="https://bscscan.com/tx/${withdrawal.txHash}">Explorer</a>`
 
     this.sendMessage(text)
   }
@@ -74,9 +74,9 @@ export default class NotificationService {
 
     if (targetAmount < 1_000) return
 
-    const text = '#trade_xdai'
+    const text = '#bsc_trade'
       + `\n${formatNumber(originAmount)} ${originSymbol} -> ${formatNumber(targetAmount)} ${targetSymbol}`
-      + `\n<a href="https://blockscout.com/poa/xdai/tx/${trade.txHash}">Blockscout</a>`
+      + `\n<a href="https://bscscan.com/tx/${trade.txHash}">Explorer</a>`
 
     this.sendMessage(text)
   }
