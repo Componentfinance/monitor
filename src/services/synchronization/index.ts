@@ -39,16 +39,14 @@ class SynchronizationService extends EventEmitter {
       this.lastProcessedBlock = +JSON.parse(lastBlockData).lastProcessedBlock
       this.log(`Loaded last synced block: ${this.lastProcessedBlock}`)
 
+    } catch (e) { }
+
+    try {
+      this.lastProcessedBlock = await this.web3.eth.getBlockNumber()
+      this.log(`RPC now at ${this.lastProcessedBlock} block`)
     } catch (e) {
-
-      try {
-        this.lastProcessedBlock = await this.web3.eth.getBlockNumber()
-        this.log(`RPC now at ${this.lastProcessedBlock} block`)
-      } catch (e) {
-        this.logError('web3 RPC is unreachable', e)
-        process.exit()
-      }
-
+      this.logError('web3 RPC is unreachable', e)
+      process.exit()
     }
 
     while (true) {
@@ -65,12 +63,20 @@ class SynchronizationService extends EventEmitter {
   private async loadEvents(toBlock) {
 
     for (const { address, tokens } of POOLS) {
+      let _fromBlock = this.lastProcessedBlock
+      let logs = []
+      while (toBlock > _fromBlock) {
+        const _toBlock = toBlock > _fromBlock + 4_999 ? _fromBlock + 4_999 : toBlock
 
-      const logs = await this.web3.eth.getPastLogs({
-        address,
-        fromBlock: this.lastProcessedBlock,
-        toBlock: toBlock,
-      })
+        this.log(_fromBlock, _toBlock)
+        const _logs = await this.web3.eth.getPastLogs({
+          address,
+          fromBlock: _fromBlock,
+          toBlock: _toBlock,
+        })
+        logs = logs.concat(_logs)
+        _fromBlock += 4_999
+      }
 
       for (const log of logs) {
 
